@@ -21,12 +21,19 @@ class Tokenizer:
         return [self.stoi[ch] for ch in word] + [self.stoi["<EOS>"]]
 
     def decode(self, tokens):
-        return ''.join(
-            self.itos[token] 
-            for token in tokens
-            if token != self.stoi["<PAD>"] 
-            and token != self.stoi["<EOS>"]
-        )
+        word = ""
+
+        for token in tokens:
+            token = int(token)
+
+            if token == self.stoi["<EOS>"]:
+                break
+            if token == self.stoi["<PAD>"]:
+                continue
+
+            word += self.itos[token]
+
+        return word
 
     def batch_encode(self, words):
         """
