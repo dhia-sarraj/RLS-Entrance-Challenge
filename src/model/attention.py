@@ -54,3 +54,33 @@ class MultiHeadAttention(nn.Module):
         out = self.linear(out)      # (B,T,n_heads*head_size) @ (n_heads*head_size,D_MODEL) --> (B,T,D_MODEL)
 
         return out
+
+class MLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.nn = nn.Sequential(
+            nn.Linear(D_MODEL, 4 * D_MODEL),
+            nn.ReLU(),
+            nn.Linear(4 * D_MODEL, D_MODEL)
+        )
+
+    def forward(self, x):
+        # x: (B,T,D_MODEL)
+        out = self.nn(x)
+
+        return out
+
+class Block(nn.Module):
+    def __init__(self, n_head):
+        super().__init__()
+        head_size = D_MODEL // n_head
+        self.multi_head_attention = MultiHeadAttention(n_head, head_size)
+        self.feed_forward = MLP()
+        self.ln1 = nn.LayerNorm(D_MODEL)
+        self.ln2 = nn.LayerNorm(D_MODEL)
+
+    def forward(self, x):
+        x = x + self.multi_head_attention(self.ln1(x))
+        x = x + self.feed_forward(self.ln2(x))
+
+        return x

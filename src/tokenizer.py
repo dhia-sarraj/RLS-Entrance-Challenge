@@ -49,7 +49,7 @@ class Tokenizer:
             padding = [self.stoi["<PAD>"]] * (max_len - len(tokens))
             padded.append(tokens + padding)
 
-        return torch.tensor(padded)
+        return torch.tensor(padded)     # (B, T) with T: length of the longest sequence in the batch
 
 if __name__ == "__main__":
     tokenizer = Tokenizer()
