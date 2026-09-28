@@ -8,18 +8,18 @@ produces next-letter logits.
 from torch import nn
 
 from configs.config import D_MODEL
-from model.decoder import Decoder
-from model.encoder import Encoder
+from src.model.decoder import Decoder
+from src.model.encoder import Encoder
 
 class Adapter(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.proj = nn.Linear(32, D_MODEL)
+        self.proj = nn.Linear(64, D_MODEL)
 
     def forward(self, x):
         # x : (B, C, H', W')
-        x = nn.flatten(2)       # (B, C, H'*W')
+        x = x.flatten(2)       # (B, C, H'*W')
         x = x.transpose(1,2)    # (B, H'*W', C)
         x = self.proj(x)        # (B, H'*W', C) @ (C, D_MODEL) --> (B, H'*W', D_MODEL)
 
@@ -30,7 +30,7 @@ class VLM(nn.Module):
         super().__init__() 
         self.encoder = Encoder()
         self.adapter = Adapter()
-        self.decoder = Decoder(32*32)
+        self.decoder = Decoder(16*16)
 
     def forward(self, images, input_tokens):
         """
@@ -39,10 +39,10 @@ class VLM(nn.Module):
         """
 
         # CNN
-        features_map = self.encoder(images)                 # (B, 32, 32, 32)
+        features_map = self.encoder(images)                 # (B, 64, 16, 16)
 
         # Adapter
-        visual_tokens = self.adapter(features_map)          # (B, 32*32, D_MODEL)
+        visual_tokens = self.adapter(features_map)          # (B, 16*16, D_MODEL)
 
         # Decoder
         logits = self.decoder(visual_tokens, input_tokens)  # (B, T, VOCAB_SIZE)
