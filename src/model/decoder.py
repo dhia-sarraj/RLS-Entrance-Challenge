@@ -9,17 +9,19 @@ import torch
 import torch.nn as nn
 
 from configs.config import D_MODEL, MAX_TEXT_LEN, NUM_HEADS, NUM_LAYERS, VOCAB_SIZE
-from model.attention import Block
+from src.model.attention import Block
 
 class Decoder(nn.Module):
     def __init__(self, num_visual_tokens):
         super().__init__()
-        self.text_embedding = nn.Embedding(VOCAB_SIZE, D_MODEL)
+        self.text_embedding = nn.Embedding(VOCAB_SIZE+1, D_MODEL)
         self.text_position_embedding = nn.Embedding(MAX_TEXT_LEN, D_MODEL)
 
         self.visual_position_embedding = nn.Embedding(num_visual_tokens, D_MODEL)
 
-        self.blocks = nn.ModuleList([Block(D_MODEL, NUM_HEADS) for _ in range(NUM_LAYERS)])
+        self.bos = nn.Parameter(torch.randn(1, 1, D_MODEL) * 0.02) 
+
+        self.blocks = nn.ModuleList([Block(NUM_HEADS) for _ in range(NUM_LAYERS)])
         self.ln_f = nn.LayerNorm(D_MODEL)
         self.lm_head = nn.Linear(D_MODEL, VOCAB_SIZE)
 
@@ -36,15 +38,26 @@ class Decoder(nn.Module):
 
 
         text_tokens = self.text_embedding(input_tokens)
-        text_positions = self.text_position_embedding(torch.arange(T))
 
-        visual_positions = self.visual_position_embedding(torch.arange(S))
+        # Beginning Of Sequence token
+        bos = self.bos.expand(B, 1, D_MODEL)
+        text_tokens = torch.cat(
+            [bos, text_tokens],
+            dim=1,
+        )
+
+        T = text_tokens.shape[1]
+
+        text_positions = self.text_position_embedding(torch.arange(T, device=input_tokens.device))
+
+        visual_positions = self.visual_position_embedding(torch.arange(S, device=input_tokens.device))
 
         text_tokens = text_tokens + text_positions          
         visual_tokens = visual_tokens + visual_positions
 
         x = torch.cat([visual_tokens, text_tokens], dim=1)  # (B, S+T, D_MODEL)
-        x = self.blocks(x)
+        for block in self.blocks:
+            x = block(x)
         x = self.ln_f(x)
         x = x[:, S:, :]                 # (B, T, D_MODEL)
         logits = self.lm_head(x)        # (B, T, 27)
