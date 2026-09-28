@@ -12,7 +12,7 @@ Understand Dataset, DataLoader and collate_fn in:
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from tokenizer import Tokenizer
+from src.tokenizer import Tokenizer
 
 tokenizer = Tokenizer()
 
@@ -43,7 +43,7 @@ def collate_fn(batch):
     images, words = zip(*batch) # images = (C, H, W)
 
     # Stacks images
-    images = torch.stack(images) #  images = (B, C, H, W)
+    images = torch.stack(images).float() / 255.0 #  images = (B, C, H, W)
 
     # Encode and pad words then put them into one batch of tensor
     tokens = tokenizer.batch_encode(words)
