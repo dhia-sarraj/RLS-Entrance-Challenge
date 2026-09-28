@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-
 from configs.config import D_MODEL
 
 class Head(nn.Module):
@@ -24,7 +23,7 @@ class Head(nn.Module):
 
     def forward(self, x):
         # x : (B, T, D_MODEL) | T = sequence length (46 letters + 1 <EOS>)
-        B,T,D_MODEL = x.shape
+        B,T,_ = x.shape
 
         k = self.key(x)     # (B,T,D_MODEL) @ (D_MODEL,head_size) --> (B,T,head_size)
         q = self.query(x)   # (B,T,D_MODEL) @ (D_MODEL,head_size) --> (B,T,head_size)
@@ -32,7 +31,7 @@ class Head(nn.Module):
 
         # MASK
         mask = torch.tril(
-            torch.ones(T, T)
+            torch.ones(T, T, device=x.device)
         )
         wei = wei.masked_fill(mask == 0, float('-inf'))
 
