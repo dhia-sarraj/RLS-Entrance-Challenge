@@ -96,7 +96,7 @@ for epoch in range(NUM_EPOCHS):
                 target = targets.reshape(-1),
                 ignore_index = PAD_ID
             )
-            val_loss += loss
+            val_loss += loss.item()
 
     val_loss = val_loss / len(val_loader)
 
